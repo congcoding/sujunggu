@@ -1,0 +1,70 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head th:replace="common/header::head"></head>
+
+<body>
+<div class="vertical-center">
+    <div class="container text-center">
+        <div th:replace="common/header::header"></div>
+
+        <form id="signup-form" method="post">
+            <input type="hidden" id="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <input type="email" class="form-control form-control-lg" name="email" id="email" placeholder="공지사항을 받을 이메일을 입력하세요.">
+            <div class="invalid-feedback" id="validEmail"></div>
+            <input type="password" class="form-control form-control-lg" name="password" id="password1" placeholder="비밀번호를 입력하세요." required>
+            <input type="password" class="form-control form-control-lg" id="password2" placeholder="비밀번호 확인을 위해 재입력하세요." required>
+            <div class="invalid-feedback" id="validPassword"></div>
+            <button type="button" id="signup-btn" class="col btn btn-outline-dark btn-lg">가입하기</button>
+        </form>
+
+        <div th:replace="common/footer::footer"></div>
+    </div>
+</div>
+
+<script>
+$('#signup-btn').click(function() {
+
+    <!-- 이메일이 형식에 맞지 않으면 return -->
+    if ($('#email').val().indexOf('@') == -1) {
+        $('#email').addClass('is-invalid');
+        $('#validEmail').html('이메일 형식이 올바르지 않습니다.');
+        return;
+    }
+    else {
+        $('#email').removeClass('is-invalid');
+        $('#validEmail').html('');
+    }
+
+    <!-- 비밀번호가 일치하지 않으면 return -->
+    if ($('#password1').val() != $('#password2').val()) {
+        $('#password1').addClass('is-invalid');
+        $('#password2').addClass('is-invalid');
+        $('#validPassword').html('비밀번호가 일치하지 않습니다.');
+        return;
+    }
+    else {
+        $('#password1').removeClass('is-invalid');
+        $('#password2').removeClass('is-invalid');
+        $('#validPassword').html('');
+    }
+
+    <!-- 유효성 검사 통과하면 폼 전송 -->
+    var formData = $('#signup-form').serialize();
+    $.ajax({
+       url: '/user/signup',
+       type: "POST",
+       data: formData,
+       success: function () {
+           alert('회원가입이 완료되었습니다.\n가입한 이메일(' + $('#email').val() + ')로 전송된 인증링크를 클릭하여 계정을 활성화하세요.');
+           location.href = '/';
+       },
+       error: function (error) {
+           alert(error.responseJSON.message);
+       }
+   });
+
+});
+</script>
+
+</body>
+</html>
