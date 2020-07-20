@@ -1,0 +1,61 @@
+/*
+rgb(106, 113, 174) : Bright Violet
+rgb(46, 116, 182) : Bright Blue
+rgb(73, 115, 148) : Gentle Gray
+rgb(74, 166, 157) : Green
+rgb(205, 175, 132) : Gold
+rgb(145, 152, 156) : Silver
+*/
+
+@media (min-width: 576px) {
+  .container {
+    width: 550px;
+  }
+}
+
+@import url(http://fonts.googleapis.com/earlyaccess/nanumgothic.css);
+html,body {font-family:nanumgothic !important;}
+
+body {
+    background-color:rgba(255, 255, 255, 1);
+}
+
+.vertical-center {
+  min-height: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+#header-div {
+    margin-bottom: 20px;
+}
+
+input.form-control-lg {
+    margin: 20px 0;
+    display: inline-block;
+}
+
+button {
+    margin: 20px 0;
+}
+
+a {
+    margin: 20px 0;
+}
+
+span {
+    text-align: center;
+    font-size: 20px;
+}
+
+span.title-lg {
+    color: rgb(74, 166, 157);
+    font-size: 50px;
+}
+
+span.title-sm {
+    color: rgb(145, 152, 156);
+    font-size: 25px;
+}
+
