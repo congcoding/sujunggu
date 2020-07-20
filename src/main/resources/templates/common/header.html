@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head th:fragment="head">
+    <link rel="shortcut icon" th:href="@{/img/favicon.ico}" type="image/x-icon">
+    <link rel="icon" th:href="@{/img/favicon.ico}" type="image/x-icon">
+    <title>수정구</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" th:href="@{/css/common.css}" />
+    <script th:src="@{/js/jquery.min.js}"></script>
+</head>
+
+<div th:fragment="header" id="header-div">
+    <div class="row justify-content-md-center">
+        <div class="col-md-auto">
+            <a th:href="@{/}"><img th:src="@{/img/logo.png}"></a>
+        </div>
+        <div class="col-md-auto">
+            <span class="title-lg">수정</span><span class="title-sm">이를 위한</span><br />
+            <span class="title-lg">구</span><span class="title-sm">독 서비스</span>
+        </div>
+    </div>
+</div>
+
+</html>
