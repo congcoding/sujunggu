@@ -9,4 +9,6 @@ public interface DepartmentRepository extends JpaRepository<Department, String> 
 
     @Query("SELECT d FROM Department d")
     List<Department> findAll();
+
+    Department findOneByAddress(String address);
 }

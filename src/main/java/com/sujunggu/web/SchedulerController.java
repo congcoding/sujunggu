@@ -19,18 +19,32 @@ public class SchedulerController {
     // 0 * * * * * : 매 0초에 실행 (1분 주기)
     // 0 0 * * * * : 매 0분에 실행 (1시간 주기)
     @Scheduled(cron = "0 0 * * * *")
-    public void scheduling() throws IOException {
+    public void schedulingHourly() throws IOException {
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        Date now = new Date();
-        String strDate = sdf.format(now);
-        System.out.println("크롤링 시작 시각 : " + strDate);
 
-        schedulerService.crawling();
+        // 게시판 크롤링
+        System.out.println("크롤링 시작 시각 : " + sdf.format(new Date()));
+        int crawlingCount[] = schedulerService.crawling();
+        System.out.println("크롤링 끝난 시각 : " + sdf.format(new Date()));
+        System.out.println("크롤링 결과 : 추가(" + crawlingCount[0] + "건), 수정(" + crawlingCount[1] + "건)");
 
-        // schedulerService.sendMail();
+        // 이메일 발송
+        System.out.println("이메일 발송 시작 시각 : " + sdf.format(new Date()));
+        int mailCount = schedulerService.sendMailByType('h');
+        System.out.println("이메일 발송 끝난 시각 : " + sdf.format(new Date()));
+        System.out.println("Hourly 이메일 발송 결과 : " + mailCount + "건)");
+    }
 
-        now = new Date();
-        strDate = sdf.format(now);
-        System.out.println("크롤링 끝난 시각 : " + strDate);
+    @Scheduled(cron = "0 30 18 * * *")
+    public void schedulingDaily() {
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+        // 이메일 발송
+        System.out.println("이메일 발송 시작 시각 : " + sdf.format(new Date()));
+        int mailCount = schedulerService.sendMailByType('h');
+        System.out.println("이메일 발송 끝난 시각 : " + sdf.format(new Date()));
+        System.out.println("Daily 이메일 발송 결과 : " + mailCount + "건)");
     }
 }

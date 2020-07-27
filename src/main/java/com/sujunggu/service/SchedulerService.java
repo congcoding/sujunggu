@@ -2,18 +2,30 @@ package com.sujunggu.service;
 
 import com.sujunggu.domain.board.Board;
 import com.sujunggu.domain.board.BoardRepository;
+import com.sujunggu.domain.department.Department;
+import com.sujunggu.domain.department.DepartmentRepository;
 import com.sujunggu.domain.post.Post;
 import com.sujunggu.domain.post.PostPK;
 import com.sujunggu.domain.post.PostRepository;
+import com.sujunggu.domain.user.User;
+import com.sujunggu.domain.user.UserRepository;
 import com.sujunggu.web.dto.PostCrawlingDto;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -22,14 +34,21 @@ public class SchedulerService {
 
     private final PostRepository postRepository;
     private final BoardRepository boardRepository;
+    private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
 
-    public void crawling() throws IOException {
+    private final JavaMailSender mailSender;
+    private int crawlingCount[] = {0, 0};
+    private int mailCount = 0;
+
+    public int[] crawling() throws IOException {
         List<Board> boardList = boardRepository.findAll();
 
         for (Board b : boardList) {
             String url = "https://www.sungshin.ac.kr/" + b.getAddress()+ "/" + b.getBoardNo() + "/subview.do";
             crawlingByBoardNo(url, b.getBoardNo());
         }
+        return crawlingCount;
     }
 
     @Transactional
@@ -57,10 +76,67 @@ public class SchedulerService {
 
             if (p == null) {
                 postRepository.save(postCrawlingDto.toEntity()); // 새로운 글이면 save
+                crawlingCount[0]++;
             }
             else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
                 p.update(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
+                crawlingCount[1]++;
             }
+        }
+    }
+
+    public int sendMailByType(char type) {
+        List<User> userList = new ArrayList<>();
+        List<Post> postList = new ArrayList<>();
+
+        if (type == 'h') { // 구독주기가 1시간인 경우
+            userList = userRepository.findUserHourly();
+            postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(70));
+        }
+        else if (type == 'd') { // 구독주기가 1일인 경우
+            userList = userRepository.findUserDaily();
+            postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(1450));
+        }
+
+        for (User u : userList) {
+            List<String> subscriptionList = Arrays.asList(u.getSubscription().split(",")); // 구독중인 게시판 리스트
+            List<Post> sendPostList = new ArrayList<>(); // 이메일로 보낼 포스트 리스트
+            for (Post p : postList) {
+                int boardNo = p.getPostPK().getBoardNo();
+                if (subscriptionList.contains(Integer.toString(boardNo))) {
+                    sendPostList.add(p); // 구독중인 게시판의 Post면 sendPostList에 추가
+                }
+            }
+            if (!sendPostList.isEmpty()) { // sendPostList가 비어있지 않으면 이메일 발송
+                sendMail(u, sendPostList);
+                mailCount++;
+            }
+        }
+        return mailCount;
+    }
+
+    public void sendMail(User u, List<Post> sendPostList) {
+        try {
+            MimeMessage msg = mailSender.createMimeMessage();
+            MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
+
+            messageHelper.setSubject("[수정구] 구독중인 게시판에 새로운 글 " + sendPostList.size() + "건이 등록되었습니다.");
+
+            String html = "구독중인 게시판에 올라온 새로운 글은 아래와 같습니다. 클릭하면 해당 글로 이동합니다.<br /><br />";
+            for (Post p : sendPostList) {
+                Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
+                Department d = departmentRepository.findOneByAddress(b.getAddress());
+                String title = "[" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
+            }
+            html += "<br />구독 게시판, 구독 주기를 변경하려면 www.수정구.com을 방문해주세요.";
+
+            messageHelper.setText("", html);
+            messageHelper.setTo(u.getEmail());
+            msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(u.getEmail()));
+            mailSender.send(msg);
+        } catch (MessagingException e) {
+            e.printStackTrace();
         }
     }
 }
