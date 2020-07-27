@@ -9,4 +9,6 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
 
     @Query("SELECT b FROM Board b")
     List<Board> findAll();
+
+    Board findOneByBoardNo(int boardNo);
 }
