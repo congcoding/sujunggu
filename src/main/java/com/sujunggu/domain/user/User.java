@@ -43,4 +43,9 @@ public class User {
     public void updateActive(String active) {
         this.active = active;
     }
+
+    public void updateSetting(String subscription, char period) {
+        this.subscription = subscription;
+        this.period = period;
+    }
 }
