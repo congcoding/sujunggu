@@ -1,11 +1,17 @@
 package com.sujunggu.web;
 
+import com.sujunggu.domain.board.Board;
 import com.sujunggu.service.UserService;
 import com.sujunggu.web.dto.UserDto;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+
+import java.security.Principal;
+import java.util.List;
 
 @Controller
 @AllArgsConstructor
@@ -49,6 +55,24 @@ public class UserController {
         String tempPassword = userService.updateTempPassword(email);
         userService.sendTempPassword(email, tempPassword);
         return "findpassword";
+    }
+
+    // 구독 설정 페이지
+    @GetMapping("/user/setting")
+    public String dispSetting(Principal principal, Model model) {
+        List<Board> boardList = userService.getBoardList();
+        List<Board> subscriptionList = userService.getSubscriptionList(principal.getName());
+        char period = userService.getPeriod(principal.getName());
+        model.addAttribute("boardList", boardList);
+        model.addAttribute("subscriptionList", subscriptionList);
+        model.addAttribute("period", period);
+        return "setting";
+    }
+
+    @PutMapping("/user/setting")
+    public String execSetting(Principal principal, String subscription, char period) {
+        userService.updateSetting(principal.getName(), subscription, period);
+        return "index";
     }
 
     // 접근 거부 페이지

@@ -1,0 +1,242 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head th:replace="common/header::head"></head>
+
+<body>
+<div class="vertical-center">
+    <div class="container text-center">
+        <div th:replace="common/header::header"></div>
+
+        <form id="setting-form" method="post">
+            <input type="hidden" id="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <div class="dropdown-divider"></div>
+
+            <h5>구독 주기</h5>
+            <h6>(새로운 글이 없을 경우 메일은 발송되지 않습니다.)</h6>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="daily" value="d" name="period" onClick="changeRadio(this)">
+                <label class="form-check-label" for="daily">1일 (18시 30분)</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="hourly" value="h" name="period" onClick="changeRadio(this)">
+                <label class="form-check-label" for="hourly">1시간 (정각)</label>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <h5>학교 공지사항</h5>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="11107" value="11107" onClick="changeChecked(this)">
+                <label class="form-check-label" for="11107"></label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="11108" value="11108" onClick="changeChecked(this)">
+                <label class="form-check-label" for="11108">일반공지</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="11109" value="11109" onClick="changeChecked(this)">
+                <label class="form-check-label" for="11109">입학공지</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="11116" value="11116" onClick="changeChecked(this)">
+                <label class="form-check-label" for="11116">취업공지</label>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <h5>학과 공지사항</h5>
+            <div class="row justify-content-md-center">
+                <select id="college-select0" class="col-5 custom-select custom-select-sm" onchange="majorChange(this)"></select>
+                <select id="major-select0" class="col-4 custom-select custom-select-sm" onchange="boardChange(this)"></select>
+            </div>
+            <div id="board-div0" class="board-div">　</div><br />
+            <div class="row justify-content-md-center">
+                <select id="college-select1" class="col-5 custom-select custom-select-sm" onchange="majorChange(this)"></select>
+                <select id="major-select1" class="col-4 custom-select custom-select-sm" onchange="boardChange(this)"></select>
+            </div>
+            <div id="board-div1" class="board-div">　</div><br />
+            <div class="row justify-content-md-center">
+                <select id="college-select2" class="col-5 custom-select custom-select-sm" onchange="majorChange(this)"></select>
+                <select id="major-select2" class="col-4 custom-select custom-select-sm" onchange="boardChange(this)"></select>
+            </div>
+            <div id="board-div2" class="board-div">　</div>
+
+            <div class="row justify-content-around">
+                <button type="button" id="setting-btn" class="col-4 btn btn-outline-dark">저장하기</button>
+                <a class="col-4 btn btn-outline-dark" th:href="@{/}">취소하기</a>
+            </div>
+
+        </form>
+
+        <div th:replace="common/footer::footer"></div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+
+    let period = /*[[${period}]]*/;
+    let boardList = /*[[${boardList}]]*/;
+    boardList = boardList.filter(board => board["address"] != 'main_kor'); // boardList에서 학교 공지사항 게시판 제외
+    let subscriptionList = /*[[${subscriptionList}]]*/;
+    let collegeArray = (Array.from(new Set(boardList.map(board => board["department"]["college"])))).sort(); // 단과 대학 배열
+    let subscriptionBoardNoArray = subscriptionList.map(board => board["boardNo"]); // 구독중인 BoardNo 배열
+    subscriptionList = boardList.filter(board => subscriptionBoardNoArray.includes(board["boardNo"])); // 구독 중인 게시판에서 학교 공지사항 게시판 제외
+    subscriptionList = subscriptionList.filter((board1, i) => { // 구독 중인 게시판에서 중복되는 학과 제외
+        return subscriptionList.findIndex((board2, j) => {
+            return board1["address"] === board2["address"];
+        }) === i;
+    });
+
+    // 페이지 로딩 시 구독중인 게시판 slected 표시
+    $(document).ready(function() {
+        for (let i = 0; i < 3; i++) {
+            if (subscriptionList.length > i) { // 구독중인 게시판 표시
+                // 단과대학 표시
+                let selectedCollege = subscriptionList[i]['department']['college'];
+                let selectedMajor = subscriptionList[i]['department']['major'];
+                let selectedBoardNo = subscriptionList[i]['boardNo'];
+                let option = "<option>단과대학 선택</option>";
+                collegeArray.forEach(college => {
+                    if (college == selectedCollege)
+                        option += "<option selected>" + college + "</option>";
+                    else
+                        option += "<option>" + college + "</option>";
+                });
+                $('#college-select' + i).append(option);
+
+                // 전공 표시
+                let majorArray = (Array.from(new Set((boardList.filter(board => board["department"]["college"] == selectedCollege)).map(board => board["department"]["major"])))).sort();
+                option = "<option>학과 선택</option>";
+                majorArray.forEach(major => {
+                    if (major == selectedMajor)
+                        option += "<option selected>" + major + "</option>";
+                    else
+                        option += "<option>" + major + "</option>";
+                });
+                $('#major-select' + i).empty().append(option);
+
+                // 게시판 표시
+                let boardArray = boardList.filter(board => board["department"]["major"] == selectedMajor);
+                let check = '';
+                boardArray.forEach(board => {
+                    check += '<div class="form-check form-check-inline">';
+                    check += '<input class="form-check-input" type="checkbox" id=' + board["boardNo"] + ' value=' + board["boardNo"] + ' onClick="changeChecked(this)">';
+                    check += '<label class="form-check-label" for=' + board["boardNo"] + '>' + board["name"] + '</label>';
+                    check += '</div>';
+                })
+                $('#board-div' + i).empty().append(check);
+            }
+            else { // 3 - 구독 중인 게시판 개수만큼 select 표시
+                let option = "<option selected>단과대학 선택</option>";
+                collegeArray.forEach(college => option += "<option>" + college + "</option>");
+                $('#college-select' + i).append(option);
+                option = "<option selected>학과 선택</option>";
+                $('#major-select' + i).append(option);
+            }
+        }
+
+        // 구독중인 게시판 check 표시
+        for (let i = 0; i < subscriptionBoardNoArray.length; i++) {
+            let boardNo = subscriptionBoardNoArray[i];
+            $('input[type="checkbox"][value=' + boardNo + ']').attr('checked', true);
+        }
+
+        // 구독 주기 check 표시
+        if (period == 'd')
+            $('#daily').attr('checked', true);
+        else if (period == 'h')
+            $('#hourly').attr('checked', true);
+
+    });
+
+    function majorChange(collegeSelect) {
+        let selectedCollege = collegeSelect.value;
+        let majorArray = (Array.from(new Set((boardList.filter(board => board["department"]["college"] == selectedCollege)).map(board => board["department"]["major"])))).sort();
+        let option = "<option selected>학과 선택</option>";
+        majorArray.forEach(major => option += "<option>" + major + "</option>");
+        $(collegeSelect).next().empty().append(option);
+        $(collegeSelect).parent().next().empty();
+    }
+
+    function boardChange(majorSelect) {
+        let selectedMajor = majorSelect.value;
+        let boardArray = boardList.filter(board => board["department"]["major"] == selectedMajor);
+        let check = '';
+        boardArray.forEach(board => {
+            check += '<div class="form-check form-check-inline">';
+            check += '<input class="form-check-input" type="checkbox" id=' + board["boardNo"] + ' value=' + board["boardNo"] + ' onClick="changeChecked(this)">';
+            check += '<label class="form-check-label" for=' + board["boardNo"] + '>' + board["name"] + '</label>';
+            check += '</div>';
+        })
+        console.log(check);
+        console.log($(majorSelect).parent().next());
+        $(majorSelect).parent().next().empty().append(check);
+    }
+
+/*]]*/
+
+// input checkbox checked toggle 기능 구현
+function changeChecked(input) {
+    if ($(input).prop("checked")) {
+        $(input).attr("checked", true);
+    }
+    else {
+        $(input).attr("checked", false);
+    };
+}
+
+// input radio checked toggle 기능 구현
+function changeRadio(input) {
+    if ($(input).val() == 'd') {
+        $('input[value="d"]').attr("checked", true);
+        $('input[value="h"]').attr("checked", false);
+    }
+    else {
+        $('input[value="h"]').attr("checked", true);
+        $('input[value="d"]').attr("checked", false);
+    }
+}
+
+$('#setting-btn').click(function() {
+
+    let checkedArray = $('input[type="checkbox"][checked="checked"]');
+    let boardNoArray = [];
+
+    // 중복된 게시판이 있으면 return
+    for (let i = 0; i < checkedArray.length; i++) {
+        let boardNo = checkedArray[i].value;
+        if (boardNoArray.includes(boardNo)) {
+            alert("중복된 게시판이 선택되어 있습니다. 하나만 선택해주세요.");
+            return ;
+        }
+        else {
+            boardNoArray.push(boardNo);
+        }
+    }
+
+    // 중복된 게시판이 없으면 join
+    let subscription = boardNoArray.join(",");
+    let period = $('input[type="radio"][checked="checked"]')[0].value;
+
+    <!-- 유효성 검사 통과하면 폼 전송 -->
+    console.log($('#csrf').val());
+    let data = {"_csrf": $('#csrf').val(), "subscription": subscription, "period": period};
+    $.ajax({
+        url: '/user/setting',
+        type: "PUT",
+        data: data,
+        success: function () {
+            alert('저장되었습니다.');
+            location.href = '/';
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>

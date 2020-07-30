@@ -1,5 +1,7 @@
 package com.sujunggu.service;
 
+import com.sujunggu.domain.board.Board;
+import com.sujunggu.domain.board.BoardRepository;
 import com.sujunggu.domain.user.User;
 import com.sujunggu.domain.user.UserRepository;
 import com.sujunggu.domain.user.Role;
@@ -18,16 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @AllArgsConstructor
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final BoardRepository boardRepository;
     private final JavaMailSender mailSender;
 
     @Transactional
@@ -105,6 +105,32 @@ public class UserService implements UserDetailsService {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Board> getBoardList() {
+        List<Board> boardList = boardRepository.findAll();
+        return boardList;
+    }
+
+    public List<Board> getSubscriptionList(String email) {
+        User u = userRepository.findByEmail(email).orElse(null);
+        String[] subscriptionArray = u.getSubscription().split(",");
+        List<Board> subscriptionList = new ArrayList<>();
+        for (String str : subscriptionArray) {
+            subscriptionList.add(boardRepository.findOneByBoardNo(Integer.parseInt(str)));
+        }
+        return subscriptionList;
+    }
+
+    public char getPeriod(String email) {
+        User u = userRepository.findByEmail(email).orElse(null);
+        return u.getPeriod();
+    }
+
+    public void updateSetting(String email, String subscription, char period){
+        System.out.println(email + " : " + subscription + " : " + period);
+        User u = userRepository.findByEmail(email).orElse(null);
+        u.updateSetting(subscription, period);
     }
 
     @Override
