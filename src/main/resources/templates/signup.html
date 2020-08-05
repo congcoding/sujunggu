@@ -55,7 +55,7 @@ $('#signup-btn').click(function() {
        type: "POST",
        data: formData,
        success: function () {
-           alert('회원가입이 완료되었습니다.\n가입한 이메일(' + $('#email').val() + ')로 전송된 인증링크를 클릭하여 계정을 활성화하세요.');
+           alert('가입한 이메일(' + $('#email').val() + ')로\n회원가입 인증 메일이 발송되었습니다.\n메일 내 인증 링크를 클릭하여 회원가입 인증을 완료해 주세요.');
            location.href = '/';
        },
        error: function (error) {

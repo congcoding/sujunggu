@@ -41,7 +41,8 @@ public class UserController {
     // 회원가입 처리
     @PostMapping("/user/signup")
     public String execSignup(UserDto userDto) {
-        userService.joinUser(userDto);
+        String authKey = userService.joinUser(userDto);
+        userService.sendAuthKey(userDto, authKey);
         return "signup";
     }
 

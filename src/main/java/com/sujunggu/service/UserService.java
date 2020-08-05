@@ -9,6 +9,7 @@ import com.sujunggu.web.dto.UserDto;
 import lombok.AllArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,32 +40,35 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("입력한 이메일 주소 \"" + userDto.getEmail() + "\"은\n이미 가입된 이메일입니다.");
         }
 
-        // 비밀번호 암호화
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        userDto.setPassword(passwordEncoder.encode(userDto.getPassword())); // 비밀번호 암호화해서 저장
+        userDto.setSubscription(""); // subscription 기본값 ""로 설정
+        userDto.setPeriod('d'); // period 기본값 'd'로 설정
 
-        // 인증키 생성
+        // 인증키 생성 후 저장
         String authKey = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 20);
         userDto.setActive(authKey);
 
-        // 인증키 이메일 발송
+        // user 저장
+        userRepository.save(userDto.toEntity()).getEmail();
+
+        return authKey;
+    }
+
+    @Async
+    public void sendAuthKey(UserDto userDto, String authKey) {
         try {
             MimeMessage msg = mailSender.createMimeMessage();
             MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
 
-            messageHelper.setSubject("수정구 이메일 인증 링크 안내 메일입니다.");
-            messageHelper.setText("", "<a href='http://3.34.222.66/user/active?email=" + userDto.getEmail() + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
+            messageHelper.setSubject("수정구 회원가입 이메일 인증 메일입니다.");
+            messageHelper.setText("", "<h3>수정구 회원가입 이메일 인증</h3><a href='http://3.34.222.66/user/active?email=" + userDto.getEmail() + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
             messageHelper.setTo(userDto.getEmail());
             msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(userDto.getEmail()));
             mailSender.send(msg);
         } catch (MessagingException e) {
             e.printStackTrace();
         }
-
-        userDto.setSubscription("");
-        userDto.setPeriod('d');
-
-        return userRepository.save(userDto.toEntity()).getEmail();
     }
 
     @Transactional
