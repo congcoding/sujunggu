@@ -91,6 +91,18 @@ public class UserController {
         return "index";
     }
 
+    @GetMapping("/user/password")
+    public String dispChangePassword() {
+        return "changepassword";
+    }
+
+    @PutMapping("/user/password")
+    public String execUpdatePassword(Principal principal, String oldPassword, String newPassword) {
+        userService.updatePassword(principal.getName(), oldPassword, newPassword);
+        SecurityContextHolder.clearContext();
+        return "changepassword";
+    }
+
     // 접근 거부 페이지
     @GetMapping("/user/denied")
     public String dispDenied() {

@@ -95,6 +95,22 @@ public class UserService implements UserDetailsService {
         return tempPassword;
     }
 
+    @Transactional
+    public void updatePassword(String email, String oldPassword, String newPassword) {
+        System.out.println(email);
+        User u = userRepository.findByEmail(email).orElse(null);
+        System.out.println(u.getEmail());
+        System.out.println(u.getPassword());
+
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        if (passwordEncoder.matches(oldPassword, u.getPassword())) {
+            u.updatePassword(passwordEncoder.encode(newPassword));
+        }
+        else {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+    }
+
     public void sendTempPassword(String email, String tempPassword) {
         // 임시 비밀번호 이메일로 전송
         try {

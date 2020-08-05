@@ -23,7 +23,7 @@
             <input type="hidden" class="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <span sec:authentication="name"></span>님 환영합니다!
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/setting}">구독 게시판 설정</a>
-            <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">비밀번호 변경</a>
+            <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/password}">비밀번호 변경</a>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
             <button type="button" class="signout-btn col btn btn-outline-dark btn-lg">탈퇴하기</button>
         </form>
