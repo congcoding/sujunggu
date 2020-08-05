@@ -4,12 +4,19 @@ import com.sujunggu.domain.board.Board;
 import com.sujunggu.service.UserService;
 import com.sujunggu.web.dto.UserDto;
 import lombok.AllArgsConstructor;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.security.Principal;
 import java.util.List;
 
@@ -69,9 +76,18 @@ public class UserController {
         return "setting";
     }
 
+    // 구독 설정 변경
     @PutMapping("/user/setting")
     public String execSetting(Principal principal, String subscription, char period) {
         userService.updateSetting(principal.getName(), subscription, period);
+        return "index";
+    }
+
+    // 회원 탈퇴
+    @DeleteMapping("/user/signout")
+    public String execSignout(Principal principal) {
+        SecurityContextHolder.clearContext(); // 회원탈퇴시 SecurityContext clear
+        userService.deleteUser(principal.getName());
         return "index";
     }
 

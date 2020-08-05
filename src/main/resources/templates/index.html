@@ -7,7 +7,7 @@
     <div class="container text-center">
         <div th:replace="common/header::header"></div>
 
-        <form sec:authorize="isAnonymous()" id="login-form" method="post">
+        <form sec:authorize="isAnonymous()" id="login-form">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <!-- UserService의 loadUserByUsername 메소드를 사용하기 위해서 name="username"으로 설정 -->
             <input type="email" class="form-control form-control-lg" name="username" id="email" placeholder="이메일">
@@ -19,22 +19,24 @@
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/find-password}">비밀번호 찾기</a>
         </form>
 
-        <div sec:authorize="hasRole('ROLE_USER')">
+        <form sec:authorize="hasRole('ROLE_USER')" id="user-form">
+            <input type="hidden" class="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <span sec:authentication="name"></span>님 환영합니다!
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/setting}">구독 게시판 설정</a>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">비밀번호 변경</a>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
-            <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">탈퇴하기</a>
-        </div>
+            <button type="button" class="signout-btn col btn btn-outline-dark btn-lg">탈퇴하기</button>
+        </form>
 
-        <div sec:authorize="hasRole('ROLE_TEMP')">
+        <form sec:authorize="hasRole('ROLE_TEMP')" id="temp-form">
+            <input type="hidden" class="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <span sec:authentication="name"></span><span>님 환영합니다!</span><br />
             <span>수정구 서비스는 이메일 인증이 필수입니다.</span><br />
             <span>이메일로 전송된 인증링크를 클릭하여 계정을 활성화하세요.</span>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">인증 메일 다시 보내기</a>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
-            <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">탈퇴하기</a>
-        </div>
+            <button type="button" class="signout-btn col btn btn-outline-dark btn-lg">탈퇴하기</button>
+        </form>
 
         <div sec:authorize="hasRole('ROLE_ADMIN')">
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
@@ -82,6 +84,28 @@ $('#login-btn').click(function() {
             alert(error.responseJSON.message);
         }
     });
+});
+
+$('.signout-btn').click(function() {
+
+    // 탈퇴 의사 재확인
+    var result = confirm("정말 탈퇴하시겠습니까?");
+
+    if (result == true) {
+        var formData = {"_csrf": $('.csrf').val()}
+        $.ajax({
+            url: '/user/signout',
+            type: "DELETE",
+            data: formData,
+            success: function () {
+                alert("탈퇴가 완료되었습니다.");
+                location.href = '/';
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    }
 });
 </script>
 

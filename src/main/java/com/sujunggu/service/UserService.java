@@ -61,6 +61,9 @@ public class UserService implements UserDetailsService {
             e.printStackTrace();
         }
 
+        userDto.setSubscription("");
+        userDto.setPeriod('d');
+
         return userRepository.save(userDto.toEntity()).getEmail();
     }
 
@@ -117,7 +120,8 @@ public class UserService implements UserDetailsService {
         String[] subscriptionArray = u.getSubscription().split(",");
         List<Board> subscriptionList = new ArrayList<>();
         for (String str : subscriptionArray) {
-            subscriptionList.add(boardRepository.findOneByBoardNo(Integer.parseInt(str)));
+            if (!str.equals(""))
+                subscriptionList.add(boardRepository.findOneByBoardNo(Integer.parseInt(str)));
         }
         return subscriptionList;
     }
@@ -127,10 +131,16 @@ public class UserService implements UserDetailsService {
         return u.getPeriod();
     }
 
-    public void updateSetting(String email, String subscription, char period){
-        System.out.println(email + " : " + subscription + " : " + period);
+    @Transactional
+    public void updateSetting(String email, String subscription, char period) {
         User u = userRepository.findByEmail(email).orElse(null);
         u.updateSetting(subscription, period);
+    }
+
+    @Transactional
+    public void deleteUser(String email) {
+        User u = userRepository.findByEmail(email).orElse(null);
+        userRepository.delete(u);
     }
 
     @Override

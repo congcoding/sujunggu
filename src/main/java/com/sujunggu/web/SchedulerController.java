@@ -33,7 +33,7 @@ public class SchedulerController {
         System.out.println("이메일 발송 시작 시각 : " + sdf.format(new Date()));
         int mailCount = schedulerService.sendMailByType('h');
         System.out.println("이메일 발송 끝난 시각 : " + sdf.format(new Date()));
-        System.out.println("Hourly 이메일 발송 결과 : " + mailCount + "건)");
+        System.out.println("Hourly 이메일 발송 결과 : " + mailCount + "건");
     }
 
     @Scheduled(cron = "0 30 18 * * *")
@@ -43,8 +43,8 @@ public class SchedulerController {
 
         // 이메일 발송
         System.out.println("이메일 발송 시작 시각 : " + sdf.format(new Date()));
-        int mailCount = schedulerService.sendMailByType('h');
+        int mailCount = schedulerService.sendMailByType('d');
         System.out.println("이메일 발송 끝난 시각 : " + sdf.format(new Date()));
-        System.out.println("Daily 이메일 발송 결과 : " + mailCount + "건)");
+        System.out.println("Daily 이메일 발송 결과 : " + mailCount + "건");
     }
 }

@@ -7,7 +7,7 @@
     <div class="container text-center">
         <div th:replace="common/header::header"></div>
 
-        <form id="setting-form" method="post">
+        <form id="setting-form">
             <input type="hidden" id="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <div class="dropdown-divider"></div>
 
@@ -27,7 +27,7 @@
             <h5>학교 공지사항</h5>
             <div class="form-check form-check-inline">
                 <input class="form-check-input" type="checkbox" id="11107" value="11107" onClick="changeChecked(this)">
-                <label class="form-check-label" for="11107"></label>
+                <label class="form-check-label" for="11107">학사공지</label>
             </div>
             <div class="form-check form-check-inline">
                 <input class="form-check-input" type="checkbox" id="11108" value="11108" onClick="changeChecked(this)">
@@ -169,8 +169,6 @@
             check += '<label class="form-check-label" for=' + board["boardNo"] + '>' + board["name"] + '</label>';
             check += '</div>';
         })
-        console.log(check);
-        console.log($(majorSelect).parent().next());
         $(majorSelect).parent().next().empty().append(check);
     }
 
@@ -220,7 +218,6 @@ $('#setting-btn').click(function() {
     let period = $('input[type="radio"][checked="checked"]')[0].value;
 
     <!-- 유효성 검사 통과하면 폼 전송 -->
-    console.log($('#csrf').val());
     let data = {"_csrf": $('#csrf').val(), "subscription": subscription, "period": period};
     $.ajax({
         url: '/user/setting',
