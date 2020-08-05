@@ -87,7 +87,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public String updateTempPassword(String email) {
-        User u = userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("입력한 이메일 주소 \"" + email + "\"은\n 가입된 이메일이 아닙니다."));
+        User u = userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("입력한 이메일 주소 \"" + email + "\"은\n가입된 이메일이 아닙니다."));
 
         // 10자리 임시 비밀번호 생성
         String tempPassword = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
@@ -115,13 +115,14 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    @Async
     public void sendTempPassword(String email, String tempPassword) {
         // 임시 비밀번호 이메일로 전송
         try {
             MimeMessage msg = mailSender.createMimeMessage();
             MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
             messageHelper.setSubject("수정구 임시 비밀번호 안내 메일입니다.");
-            messageHelper.setText("임시 비밀번호는 " + tempPassword + " 입니다.");
+            messageHelper.setText("임시 비밀번호는 " + tempPassword + " 입니다.\n임시 비밀번호로 로그인 후 비밀번호를 변경해 주세요.");
             messageHelper.setTo(email);
             msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(email));
             mailSender.send(msg);
