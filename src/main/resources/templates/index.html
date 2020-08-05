@@ -31,9 +31,15 @@
         <form sec:authorize="hasRole('ROLE_TEMP')" id="temp-form">
             <input type="hidden" class="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <span sec:authentication="name"></span><span>님 환영합니다!</span><br />
-            <span>수정구 서비스는 이메일 인증이 필수입니다.</span><br />
-            <span>이메일로 전송된 인증링크를 클릭하여 계정을 활성화하세요.</span>
-            <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">인증 메일 다시 보내기</a>
+
+            <div class="dropdown-divider"></div>
+
+            <h6>수정구 서비스를 이용하기 위해서는 이메일 인증이 필수입니다.</h6>
+            <h6>이메일로 전송된 인증 링크를 클릭하여 계정을 활성화 해 주세요.</h6>
+
+            <div class="dropdown-divider"></div>
+
+            <button type="button" id="auth-btn" class="col btn btn-outline-dark btn-lg">인증 메일 다시 보내기</button>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
             <button type="button" class="signout-btn col btn btn-outline-dark btn-lg">탈퇴하기</button>
         </form>
@@ -82,6 +88,22 @@ $('#login-btn').click(function() {
         },
         error: function (error) {
             alert(error.responseJSON.message);
+        }
+    });
+});
+
+$('#auth-btn').click(function() {
+    var formData = {"_csrf": $('.csrf').val()}
+    $.ajax({
+        url: '/user/resend-auth',
+        type: "PUT",
+        data: formData,
+        success: function () {
+            alert('회원가입 인증 메일이 재발송되었습니다.\n메일 내 인증 링크를 클릭하여 회원가입 인증을 완료해 주세요.');
+            location.href = '/';
+        },
+        error: function (error) {
+            console.log(error);
         }
     });
 });

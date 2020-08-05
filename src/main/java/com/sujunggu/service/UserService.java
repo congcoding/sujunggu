@@ -55,16 +55,24 @@ public class UserService implements UserDetailsService {
         return authKey;
     }
 
+    @Transactional
+    public String updateAuth(String email) {
+        User u = userRepository.findByEmail(email).orElse(null);
+        String authKey = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 20);
+        u.updateActive(authKey);
+        return authKey;
+    }
+
     @Async
-    public void sendAuthKey(UserDto userDto, String authKey) {
+    public void sendAuthKey(String email, String authKey) {
         try {
             MimeMessage msg = mailSender.createMimeMessage();
             MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
 
             messageHelper.setSubject("수정구 회원가입 이메일 인증 메일입니다.");
-            messageHelper.setText("", "<h3>수정구 회원가입 이메일 인증</h3><a href='http://3.34.222.66/user/active?email=" + userDto.getEmail() + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
-            messageHelper.setTo(userDto.getEmail());
-            msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(userDto.getEmail()));
+            messageHelper.setText("", "<h3>수정구 회원가입 이메일 인증</h3><a href='http://3.34.222.66/user/active?email=" + email + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
+            messageHelper.setTo(email);
+            msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(email));
             mailSender.send(msg);
         } catch (MessagingException e) {
             e.printStackTrace();

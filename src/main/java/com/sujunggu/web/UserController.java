@@ -42,8 +42,16 @@ public class UserController {
     @PostMapping("/user/signup")
     public String execSignup(UserDto userDto) {
         String authKey = userService.joinUser(userDto);
-        userService.sendAuthKey(userDto, authKey);
+        userService.sendAuthKey(userDto.getEmail(), authKey);
         return "signup";
+    }
+
+    // 인증 메일 재발송
+    @PutMapping("/user/resend-auth")
+    public String execResendAuth(Principal principal) {
+        String authKey = userService.updateAuth(principal.getName());
+        userService.sendAuthKey(principal.getName(), authKey);
+        return "index";
     }
 
     // 이메일 인증 처리
