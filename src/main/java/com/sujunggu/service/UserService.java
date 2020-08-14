@@ -109,10 +109,7 @@ public class UserService implements UserDetailsService {
 
     @Transactional
     public void updatePassword(String email, String oldPassword, String newPassword) {
-        System.out.println(email);
         User u = userRepository.findByEmail(email).orElse(null);
-        System.out.println(u.getEmail());
-        System.out.println(u.getPassword());
 
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         if (passwordEncoder.matches(oldPassword, u.getPassword())) {

@@ -35,13 +35,15 @@ public class SchedulerService {
     private final PostRepository postRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
-    private final DepartmentRepository departmentRepository;
+    private final AsyncService asyncService;
 
-    private final JavaMailSender mailSender;
     private int crawlingCount[] = {0, 0};
     private int mailCount = 0;
 
     public int[] crawling() throws IOException {
+        crawlingCount[0] = 0;
+        crawlingCount[1] = 0;
+        mailCount = 0;
         List<Board> boardList = boardRepository.findAll();
 
         for (Board b : boardList) {
@@ -57,7 +59,7 @@ public class SchedulerService {
         Document doc = Jsoup.connect(url).get();
 
         Elements postNoElements = doc.select("._artclTdNum");
-        Elements titleElements = doc.select("._artclTdTitle strong");
+        Elements titleElements = doc.select("._artclTdTitle > a > strong");
         Elements addressElements = doc.select("._artclTdTitle > a");
 
         for (int i = 0; i < postNoElements.size(); i++) {
@@ -79,7 +81,8 @@ public class SchedulerService {
                 crawlingCount[0]++;
             }
             else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
-                p.update(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
+                p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
+                postRepository.save(p);
                 crawlingCount[1]++;
             }
         }
@@ -108,35 +111,12 @@ public class SchedulerService {
                 }
             }
             if (!sendPostList.isEmpty()) { // sendPostList가 비어있지 않으면 이메일 발송
-                sendMail(u, sendPostList);
+                asyncService.sendMail(u, sendPostList);
                 mailCount++;
             }
         }
         return mailCount;
     }
 
-    public void sendMail(User u, List<Post> sendPostList) {
-        try {
-            MimeMessage msg = mailSender.createMimeMessage();
-            MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
 
-            messageHelper.setSubject("[수정구] 구독중인 게시판에 새로운 글 " + sendPostList.size() + "건이 등록되었습니다.");
-
-            String html = "구독중인 게시판에 올라온 새로운 글은 아래와 같습니다. 클릭하면 해당 글로 이동합니다.<br /><br />";
-            for (Post p : sendPostList) {
-                Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
-                Department d = departmentRepository.findOneByAddress(b.getAddress());
-                String title = "[" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
-                html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
-            }
-            html += "<br />구독 게시판, 구독 주기를 변경하려면 www.수정구.com을 방문해주세요.";
-
-            messageHelper.setText("", html);
-            messageHelper.setTo(u.getEmail());
-            msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(u.getEmail()));
-            mailSender.send(msg);
-        } catch (MessagingException e) {
-            e.printStackTrace();
-        }
-    }
 }
