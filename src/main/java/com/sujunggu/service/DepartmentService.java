@@ -1,4 +1,4 @@
-package com.sujunggu.service.department;
+package com.sujunggu.service;
 
 import com.sujunggu.domain.department.DepartmentRepository;
 import com.sujunggu.web.dto.DepartmentListResponseDto;

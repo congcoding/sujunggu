@@ -1,6 +1,6 @@
 package com.sujunggu.web;
 
-import com.sujunggu.service.department.DepartmentService;
+import com.sujunggu.service.DepartmentService;
 import com.sujunggu.web.dto.DepartmentListResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
