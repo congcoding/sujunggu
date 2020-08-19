@@ -70,7 +70,7 @@ public class UserService implements UserDetailsService {
             MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
 
             messageHelper.setSubject("수정구 회원가입 이메일 인증 메일입니다.");
-            messageHelper.setText("", "<h3>수정구 회원가입 이메일 인증</h3><a href='http://3.34.222.66/user/active?email=" + email + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
+            messageHelper.setText("", "<h3>수정구 회원가입 이메일 인증</h3><a href='https://www.수정구.com/user/active?email=" + email + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
             messageHelper.setTo(email);
             msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(email));
             mailSender.send(msg);

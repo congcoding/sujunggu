@@ -40,7 +40,7 @@ public class AsyncService {
                 String title = "[" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
                 html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
             }
-            html += "<br />구독 게시판, 구독 주기를 변경하려면 www.수정구.com을 방문해주세요.";
+            html += "<br />구독 게시판, 구독 주기 변경은 <a href='https://www.수정구.com'>www.수정구.com</a>에서 가능합니다.";
 
             messageHelper.setText("", html);
             messageHelper.setTo(u.getEmail());
