@@ -68,20 +68,24 @@ public class SchedulerService {
             String url = "https://www.sungshin.ac.kr/" + b.getAddress()+ "/" + b.getBoardNo() + "/subview.do";
             crawlingByBoardNo(url, b.getBoardNo());
         }
+        logger.info("학과별 게시판 크롤링 결과 : 신규(" + postCreatedCount + "건), 수정(" + postModifiedCount + "건)");
         logger.info("==================== 학과별 게시판 크롤링 끝 ====================");
+
+        postCreatedCount = 0;
+        postModifiedCount = 0;
 
         logger.info("==================== 포탈 크롤링 시작 ====================");
         crawlingPortal("https://portal.sungshin.ac.kr/portal/ssu/menu/notice/ssuboard02.page", 8656); // 학부학사 크롤링
         crawlingPortal("https://portal.sungshin.ac.kr/portal/ssu/menu/notice/ssuboard10.page", 9616); // 학부장학 크롤링
+        logger.info("포탈 게시판 크롤링 결과 : 신규(" + postCreatedCount + "건), 수정(" + postModifiedCount + "건)");
         logger.info("==================== 포탈 크롤링 끝 ====================");
 
-        logger.info("크롤링 결과 : 신규(" + postCreatedCount + "건), 수정(" + postModifiedCount + "건)");
     }
 
     @Transactional
     public void crawlingByBoardNo(String url, int boardNo) throws IOException {
 
-        Document doc = Jsoup.connect(url).get();
+        Document doc = Jsoup.connect(url).timeout(20000).get();
 
         Elements postNoElements = doc.select("._artclTdNum");
         Elements titleElements = doc.select("._artclTdTitle > a > strong");
@@ -107,9 +111,9 @@ public class SchedulerService {
                 postCreatedCount++;
             }
             else if (!((p.getTitle()).equals(postCrawlingDto.getTitle())) || !((p.getAddress()).equals(postCrawlingDto.getAddress()))) {
+                logger.info("[수정 크롤링 : 전] " + p.toString());
                 p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
                 p.updateAddress(postCrawlingDto.getAddress()); // 주소가 변경됐을 경우 update
-                logger.info("[수정 크롤링 : 전] " + p.toString());
                 logger.info("[수정 크롤링 : 후] " + postCrawlingDto.toEntity().toString());
                 postRepository.save(p);
                 postModifiedCount++;
@@ -168,8 +172,8 @@ public class SchedulerService {
                 postCreatedCount++;
             }
             else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
-                p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
                 logger.info("[수정 크롤링 : 전] " + p.toString());
+                p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
                 logger.info("[수정 크롤링 : 후] " + postCrawlingDto.toEntity().toString());
                 postRepository.save(p);
                 postModifiedCount++;

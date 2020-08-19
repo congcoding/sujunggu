@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head th:replace="common/header::head"></head>
+
+<body>
+<div class="vertical-center">
+    <div class="container text-center">
+        <div th:replace="common/header::header"></div>
+
+        <h3>잘못된 접근이거나 일시적인 에러입니다.</h3>
+        <h3>다시 시도해 주세요.</h3>
+        <a class="col btn btn-outline-dark btn-lg" th:href="@{/}">메인으로 돌아가기</a>
+
+        <div th:replace="common/footer::footer"></div>
+    </div>
+</div>
+</body>
+</html>

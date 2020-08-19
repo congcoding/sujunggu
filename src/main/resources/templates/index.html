@@ -22,10 +22,10 @@
         <form sec:authorize="hasRole('ROLE_USER')" id="user-form">
             <input type="hidden" class="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <span sec:authentication="name"></span>님 환영합니다!
-            <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/setting}">구독 게시판 설정</a>
+            <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/setting}">구독 설정</a>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/password}">비밀번호 변경</a>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
-            <button type="button" class="signout-btn col btn btn-outline-dark btn-lg">탈퇴하기</button>
+            <button type="button" class="signout-btn col btn btn-outline-secondary btn-lg">탈퇴하기</button>
         </form>
 
         <form sec:authorize="hasRole('ROLE_TEMP')" id="temp-form">
@@ -41,7 +41,7 @@
 
             <button type="button" id="auth-btn" class="col btn btn-outline-dark btn-lg">인증 메일 다시 보내기</button>
             <a class="col btn btn-outline-dark btn-lg" th:href="@{/user/logout}">로그아웃</a>
-            <button type="button" class="signout-btn col btn btn-outline-dark btn-lg">탈퇴하기</button>
+            <button type="button" class="signout-btn col btn btn-outline-secondary btn-lg">탈퇴하기</button>
         </form>
 
         <div sec:authorize="hasRole('ROLE_ADMIN')">
@@ -87,7 +87,13 @@ $('#login-btn').click(function() {
             location.href = '/';
         },
         error: function (error) {
-            alert(error.responseJSON.message);
+            if (error.responseJSON.message == "Request method 'POST' not supported") {
+                alert("일시적인 에러입니다. 새로고침 후 다시 시도해 주세요.");
+                location.href = '/';
+            }
+            else {
+                alert(error.responseJSON.message);
+            }
         }
     });
 });
@@ -99,7 +105,7 @@ $('#auth-btn').click(function() {
         type: "PUT",
         data: formData,
         success: function () {
-            alert('회원가입 인증 메일이 재발송되었습니다.\n메일 내 인증 링크를 클릭하여 회원가입 인증을 완료해 주세요.');
+            alert('회원가입 인증 메일이 재발송되었습니다.\n메일 발송에 시간이 걸릴 수 있으니 기다려주세요.\n메일 내 인증 링크를 클릭하여 회원가입 인증을 완료해 주세요.');
             location.href = '/';
         },
         error: function (error) {

@@ -36,7 +36,7 @@ public class Post extends BaseTimeEntity {
     @Override
     public String toString() {
         return "Post{" +
-                "postPK=[" + postPK.getBoardNo() + "][" + postPK.getPostNo() +
+                "postPK=[" + postPK.getBoardNo() + "][" + postPK.getPostNo() + "]" +
                 ", title='" + title + '\'' +
                 ", address='" + address + '\'' +
                 ", createdDate=" + getCreatedDate() +

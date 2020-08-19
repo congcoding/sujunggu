@@ -11,8 +11,7 @@
             <input type="hidden" id="csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <div class="dropdown-divider"></div>
 
-            <h5>구독 주기</h5>
-            <h6>(새로운 글이 없을 경우 메일은 발송되지 않습니다.)</h6>
+            <h5 class="bg-light text-black">구독 주기<br /><small class="text-muted">(새로운 글이 없을 경우 메일은 발송되지 않습니다.)</small></h5>
             <div class="form-check form-check-inline">
                 <input class="form-check-input" type="radio" id="daily" value="d" name="period" onClick="changeRadio(this)">
                 <label class="form-check-label" for="daily">1일 (18시 30분)</label>
@@ -24,7 +23,7 @@
 
             <div class="dropdown-divider"></div>
 
-            <h5>학교 공지사항</h5>
+            <h5 class="bg-light text-black">학교 공지사항</h5>
             <div class="form-check form-check-inline">
                 <input class="form-check-input" type="checkbox" id="11107" value="11107" onClick="changeChecked(this)">
                 <label class="form-check-label" for="11107">학사공지</label>
@@ -44,7 +43,7 @@
 
             <div class="dropdown-divider"></div>
 
-            <h5>포탈 공지사항</h5>
+            <h5 class="bg-light text-black">포탈 공지사항</h5>
             <div class="form-check form-check-inline">
                 <input class="form-check-input" type="checkbox" id="8656" value="8656" onClick="changeChecked(this)">
                 <label class="form-check-label" for="8656">학부학사</label>
@@ -56,7 +55,7 @@
 
             <div class="dropdown-divider"></div>
 
-            <h5>학과 공지사항</h5>
+            <h5 class="bg-light text-black">학과 공지사항</h5>
             <div class="row justify-content-md-center">
                 <select id="college-select0" class="col-5 custom-select custom-select-sm" onchange="majorChange(this)"></select>
                 <select id="major-select0" class="col-4 custom-select custom-select-sm" onchange="boardChange(this)"></select>
