@@ -80,8 +80,9 @@ public class SchedulerService {
                 postRepository.save(postCrawlingDto.toEntity()); // 새로운 글이면 save
                 crawlingCount[0]++;
             }
-            else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
+            else if (!((p.getTitle()).equals(postCrawlingDto.getTitle())) || !((p.getAddress()).equals(postCrawlingDto.getAddress()))) {
                 p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
+                p.updateAddress(postCrawlingDto.getAddress());
                 postRepository.save(p);
                 crawlingCount[1]++;
             }

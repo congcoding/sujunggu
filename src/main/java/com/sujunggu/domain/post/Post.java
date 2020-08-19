@@ -28,4 +28,8 @@ public class Post extends BaseTimeEntity {
     public void updateTitle(String title) {
         this.title = title;
     }
+
+    public void updateAddress(String address) {
+        this.address = address;
+    }
 }
