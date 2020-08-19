@@ -33,19 +33,25 @@ public class AsyncService {
 
             messageHelper.setSubject("[수정구] 구독중인 게시판에 공지사항 " + sendPostList.size() + "건이 등록/수정되었습니다.");
 
-            String html = "구독중인 게시판에 올라온 새로운 글과 수정된 글은 아래와 같습니다. 클릭하면 해당 글로 이동합니다.<br /><br />";
+            String html = "구독중인 게시판에 올라온 새로운 글과 수정된 글은 아래와 같습니다<br />";
+            html += "(학과별 공지사항의 경우 클릭하면 해당 글로 이동하고, 포탈 공지사항은 포탈로 이동합니다.)<br /><br />";
             for (Post p : sendPostList) {
                 Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
                 Department d = departmentRepository.findOneByAddress(b.getAddress());
                 String title = "";
-                if (p.getCreatedDate() != p.getModifiedDate()) { // 수정된 글일 경우
+                if (p.getCreatedDate().getHour() != p.getModifiedDate().getHour()) { // 수정된 글 경우
                     title = "[수정][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
                 }
-                else {
+                else { // 새로운 글인 경우
                     title = "[신규][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
                 }
 
-                html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
+                if ("".equals(p.getAddress())) { // 포탈 게시글인 경우
+                    html += "<a href='https://portal.sungshin.ac.kr/portal'>" + title + "</a><br />";
+                }
+                else { // 학과별 게시글인 경우
+                    html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
+                }
             }
             html += "<br />구독 게시판, 구독 주기 변경은 <a href='https://www.수정구.com'>www.수정구.com</a>에서 가능합니다.";
 

@@ -2,8 +2,6 @@ package com.sujunggu.service;
 
 import com.sujunggu.domain.board.Board;
 import com.sujunggu.domain.board.BoardRepository;
-import com.sujunggu.domain.department.Department;
-import com.sujunggu.domain.department.DepartmentRepository;
 import com.sujunggu.domain.post.Post;
 import com.sujunggu.domain.post.PostPK;
 import com.sujunggu.domain.post.PostRepository;
@@ -14,14 +12,17 @@ import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,25 +33,49 @@ import java.util.List;
 @Service
 public class SchedulerService {
 
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
     private final PostRepository postRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final AsyncService asyncService;
 
-    private int crawlingCount[] = {0, 0};
-    private int mailCount = 0;
+    @Value("${portal.id}")
+    private String PORTAL_ID;
 
-    public int[] crawling() throws IOException {
-        crawlingCount[0] = 0;
-        crawlingCount[1] = 0;
+    @Value("${portal.pwd}")
+    private String PORTAL_PWD;
+
+    @Value("${selenium.driver.id}")
+    private String DRIVER_ID;
+
+    @Value("${selenium.driver.path}")
+    private String DRIVER_PATH;
+
+    private int postCreatedCount;
+    private int postModifiedCount;
+    private int mailCount;
+
+    public void crawling() throws IOException, InterruptedException {
+        postCreatedCount = 0;
+        postModifiedCount = 0;
         mailCount = 0;
-        List<Board> boardList = boardRepository.findAll();
 
+        // 학과별 게시판 크롤링
+        logger.info("==================== 학과별 게시판 크롤링 시작 ====================");
+        List<Board> boardList = boardRepository.findAll();
         for (Board b : boardList) {
             String url = "https://www.sungshin.ac.kr/" + b.getAddress()+ "/" + b.getBoardNo() + "/subview.do";
             crawlingByBoardNo(url, b.getBoardNo());
         }
-        return crawlingCount;
+        logger.info("==================== 학과별 게시판 크롤링 끝 ====================");
+
+        logger.info("==================== 포탈 크롤링 시작 ====================");
+        crawlingPortal("https://portal.sungshin.ac.kr/portal/ssu/menu/notice/ssuboard02.page", 8656); // 학부학사 크롤링
+        crawlingPortal("https://portal.sungshin.ac.kr/portal/ssu/menu/notice/ssuboard10.page", 9616); // 학부장학 크롤링
+        logger.info("==================== 포탈 크롤링 끝 ====================");
+
+        logger.info("크롤링 결과 : 신규(" + postCreatedCount + "건), 수정(" + postModifiedCount + "건)");
     }
 
     @Transactional
@@ -78,24 +103,89 @@ public class SchedulerService {
 
             if (p == null) {
                 postRepository.save(postCrawlingDto.toEntity()); // 새로운 글이면 save
-                crawlingCount[0]++;
+                logger.info("[신규 크롤링] " + postCrawlingDto.toEntity().toString());
+                postCreatedCount++;
             }
             else if (!((p.getTitle()).equals(postCrawlingDto.getTitle())) || !((p.getAddress()).equals(postCrawlingDto.getAddress()))) {
                 p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
-                p.updateAddress(postCrawlingDto.getAddress());
+                p.updateAddress(postCrawlingDto.getAddress()); // 주소가 변경됐을 경우 update
+                logger.info("[수정 크롤링 : 전] " + p.toString());
+                logger.info("[수정 크롤링 : 후] " + postCrawlingDto.toEntity().toString());
                 postRepository.save(p);
-                crawlingCount[1]++;
+                postModifiedCount++;
             }
         }
     }
 
-    public int sendMailByType(char type) {
+    public void crawlingPortal(String url, int boardNo) throws IOException, InterruptedException {
+
+        // 변수 설정
+        System.setProperty(DRIVER_ID, DRIVER_PATH);
+
+        // 크롬옵션 설정
+        ChromeOptions options = new ChromeOptions();
+        options.setCapability("ignoreProtectedModeSettings", true);
+        options.addArguments("headless"); //창 안 보이게 하는 옵션
+        options.addArguments("no-sandbox");
+        options.addArguments("lang=ko");
+        WebDriver driver = new ChromeDriver(options);
+
+        // 포탈 로그인
+        driver.get("https://portal.sungshin.ac.kr/sso/login.jsp");
+        WebElement inputId = driver.findElement(By.id("loginId_mobile"));
+        WebElement inputPwd = driver.findElement(By.id("loginPwd_mobile"));
+        WebElement btnLogin = driver.findElements(By.className("login_btn")).get(0);
+        inputId.sendKeys(PORTAL_ID);
+        inputPwd.sendKeys(PORTAL_PWD);
+        btnLogin.click();
+        Thread.sleep(3000);
+
+        // 학부학사 iframe으로 이동
+        driver.get(url);
+        Thread.sleep(3000);
+        driver.switchTo().frame(driver.findElement(By.id("IframePortlet_" + Integer.toString(boardNo))));
+        Thread.sleep(3000);
+
+        // 게시글 크롤링
+        List<WebElement> aList = driver.findElements(By.cssSelector("table[class='list web'] > tbody > tr > td[class='L inLi'] > div > a"));
+
+        for (int i = 0; i < 10; i++) {
+            String title = aList.get(i).getAttribute("title");
+            String postNo = aList.get(i).getAttribute("onclick").substring(39, 48);
+
+            PostPK pk = new PostPK(boardNo, Integer.parseInt(postNo)); // pk 생성
+            Post p = postRepository.findById(pk).orElse(null); // pk를 이용해서 조회한 결과가 있으면 p에 저장하고, 없으면 p에 null 저장
+
+            PostCrawlingDto postCrawlingDto = PostCrawlingDto.builder() // 크롤링한 데이터를 이용해서 postCrawlingDto 생성
+                    .postPK(pk)
+                    .title(title)
+                    .address("")
+                    .build();
+
+            if (p == null) {
+                postRepository.save(postCrawlingDto.toEntity()); // 새로운 글이면 save
+                logger.info("[신규 크롤링] " + postCrawlingDto.toEntity().toString());
+                postCreatedCount++;
+            }
+            else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
+                p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
+                logger.info("[수정 크롤링 : 전] " + p.toString());
+                logger.info("[수정 크롤링 : 후] " + postCrawlingDto.toEntity().toString());
+                postRepository.save(p);
+                postModifiedCount++;
+            }
+        }
+
+        driver.close();
+    }
+
+    public void sendMailByType(char type) {
         List<User> userList = new ArrayList<>();
         List<Post> postList = new ArrayList<>();
 
         if (type == 'h') { // 구독주기가 1시간인 경우
             userList = userRepository.findUserHourly();
-            postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(70));
+            postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(10));
         }
         else if (type == 'd') { // 구독주기가 1일인 경우
             userList = userRepository.findUserDaily();
@@ -116,8 +206,7 @@ public class SchedulerService {
                 mailCount++;
             }
         }
-        return mailCount;
+        logger.info("이메일 발송 결과 : " + mailCount + "건");
     }
-
 
 }

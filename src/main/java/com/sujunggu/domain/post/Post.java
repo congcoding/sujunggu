@@ -32,4 +32,15 @@ public class Post extends BaseTimeEntity {
     public void updateAddress(String address) {
         this.address = address;
     }
+
+    @Override
+    public String toString() {
+        return "Post{" +
+                "postPK=[" + postPK.getBoardNo() + "][" + postPK.getPostNo() +
+                ", title='" + title + '\'' +
+                ", address='" + address + '\'' +
+                ", createdDate=" + getCreatedDate() +
+                ", modifiedDate=" + getModifiedDate() +
+                '}';
+    }
 }

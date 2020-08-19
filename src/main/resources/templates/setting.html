@@ -44,6 +44,18 @@
 
             <div class="dropdown-divider"></div>
 
+            <h5>포탈 공지사항</h5>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="8656" value="8656" onClick="changeChecked(this)">
+                <label class="form-check-label" for="8656">학부학사</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="9616" value="9616" onClick="changeChecked(this)">
+                <label class="form-check-label" for="9616">학부장학</label>
+            </div>
+
+            <div class="dropdown-divider"></div>
+
             <h5>학과 공지사항</h5>
             <div class="row justify-content-md-center">
                 <select id="college-select0" class="col-5 custom-select custom-select-sm" onchange="majorChange(this)"></select>
@@ -78,10 +90,11 @@
     let period = /*[[${period}]]*/;
     let boardList = /*[[${boardList}]]*/;
     boardList = boardList.filter(board => board["address"] != 'main_kor'); // boardList에서 학교 공지사항 게시판 제외
+    boardList = boardList.filter(board => board["address"] != 'portal'); // boardList에서 포탈 공지사항 게시판 제외
     let subscriptionList = /*[[${subscriptionList}]]*/;
     let collegeArray = (Array.from(new Set(boardList.map(board => board["department"]["college"])))).sort(); // 단과 대학 배열
     let subscriptionBoardNoArray = subscriptionList.map(board => board["boardNo"]); // 구독중인 BoardNo 배열
-    subscriptionList = boardList.filter(board => subscriptionBoardNoArray.includes(board["boardNo"])); // 구독 중인 게시판에서 학교 공지사항 게시판 제외
+    subscriptionList = boardList.filter(board => subscriptionBoardNoArray.includes(board["boardNo"])); // 구독 중인 게시판에서 학교 공지사항 게시판, 포탈 공지사항 게시판 제외
     subscriptionList = subscriptionList.filter((board1, i) => { // 구독 중인 게시판에서 중복되는 학과 제외
         return subscriptionList.findIndex((board2, j) => {
             return board1["address"] === board2["address"];
