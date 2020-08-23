@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Service
@@ -130,9 +131,11 @@ public class SchedulerService {
         ChromeOptions options = new ChromeOptions();
         options.setCapability("ignoreProtectedModeSettings", true);
         options.addArguments("headless"); //창 안 보이게 하는 옵션
-        options.addArguments("no-sandbox");
-        options.addArguments("lang=ko");
+        options.addArguments("--disable-dev-shm-usage"); // linux 성능 개선 옵션
+        options.addArguments("--no-sandbox"); // linux 성능 개선 옵션
+        options.addArguments("lang=ko"); // 한글 옵션
         WebDriver driver = new ChromeDriver(options);
+        driver.manage().timeouts().implicitlyWait(180, TimeUnit.SECONDS); // 페이지 로딩 시간 3분까지 기다리게 하기
 
         // 포탈 로그인
         driver.get("https://portal.sungshin.ac.kr/sso/login.jsp");
@@ -180,7 +183,7 @@ public class SchedulerService {
             }
         }
 
-        driver.close();
+        driver.quit();
     }
 
     public void sendMailByType(char type) {

@@ -35,7 +35,7 @@ dependencies {
     compile('org.jsoup:jsoup:1.13.1') // jsoup
     compile('org.seleniumhq.selenium:selenium-java:3.141.59') // selenium
     compile('org.springframework.boot:spring-boot-starter-thymeleaf') // thymeleaf
-    compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity5') // thyemleaf spring security
+    compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity5') // thymeleaf spring security
     compile('org.springframework.boot:spring-boot-starter-security') // spring security
     compile('org.springframework.boot:spring-boot-starter-mail') // email
     testCompile('org.springframework.boot:spring-boot-starter-test')
