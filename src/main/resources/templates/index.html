@@ -88,7 +88,7 @@ $('#login-btn').click(function() {
         },
         error: function (error) {
             if (error.responseJSON.message == "Request method 'POST' not supported") {
-                alert("일시적인 에러입니다. 새로고침 후 다시 시도해 주세요.");
+                // alert("일시적인 에러입니다. 새로고침 후 다시 시도해 주세요.");
                 location.href = '/';
             }
             else {

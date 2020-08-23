@@ -56,8 +56,9 @@ public class UserController {
 
     // 이메일 인증 처리
     @GetMapping("/user/active")
-    public String execActive(UserDto userDto) {
-        userService.updateActive(userDto);
+    public String execActive(UserDto userDto, Model model) {
+        boolean result = userService.updateActive(userDto);
+        model.addAttribute("result", result);
         return "active";
     }
 

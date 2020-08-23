@@ -80,17 +80,16 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public UserDetails updateActive(UserDto userDto) {
+    public boolean updateActive(UserDto userDto) {
         User u = userRepository.findByEmail(userDto.getEmail()).orElseThrow(() -> new IllegalArgumentException("정상적인 접근이 아닙니다."));
 
         // DB에 저장된 active값과 userDto의 active값이 같으면 active를 "Y"로 update
         if (userDto.getActive().equals(u.getActive())) {
             u.updateActive("Y");
         } else {
-            throw new IllegalArgumentException("정상적인 접근이 아닙니다.");
+            return false;
         }
-
-        return loadUserByUsername(userDto.getEmail());
+        return true;
     }
 
     @Transactional

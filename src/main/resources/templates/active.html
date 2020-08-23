@@ -3,11 +3,21 @@
 <head th:replace="common/header::head"></head>
 
 <body>
-<script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    let result = /*[[${result}]]*/;
+    /*]]*/
+
     $(document).ready(function() {
-        alert("이메일 인증이 완료되었습니다.\n로그인 후 구독 설정을 해 주세요.");
-        location.href = '/';
+        if (result) {
+            alert("이메일 인증이 완료되었습니다.\n로그인 후 구독 설정을 해 주세요.");
+            location.href = '/';
+        }
+        else {
+            alert("유효하지 않은 인증 링크입니다.\n가장 마지막에 받은 인증 링크로 접속해 주세요.");
+            location.href = '/';
+        }
     });
-</script>다
+</script>
 </body>
 </html>
