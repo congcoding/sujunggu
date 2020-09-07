@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 @Service
@@ -72,9 +73,9 @@ public class UserService implements UserDetailsService {
             messageHelper.setSubject("수정구 회원가입 이메일 인증 메일입니다.");
             messageHelper.setText("", "<h3>수정구 회원가입 이메일 인증</h3><a href='https://www.수정구.com/user/active?email=" + email + "&active=" + authKey + "'>인증 링크</a>를 클릭하면 회원가입이 완료됩니다.");
             messageHelper.setTo(email);
-            msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(email));
+            messageHelper.setFrom(new InternetAddress("subsforsujung@gmail.com", "subsforsujung"));
             mailSender.send(msg);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
     }
@@ -114,9 +115,9 @@ public class UserService implements UserDetailsService {
             messageHelper.setSubject("수정구 임시 비밀번호 안내 메일입니다.");
             messageHelper.setText("임시 비밀번호는 " + tempPassword + " 입니다.\n임시 비밀번호로 로그인 후 비밀번호를 변경해 주세요.");
             messageHelper.setTo(email);
-            msg.setRecipients(MimeMessage.RecipientType.TO, InternetAddress.parse(email));
+            messageHelper.setFrom(new InternetAddress("subsforsujung@gmail.com", "subsforsujung"));
             mailSender.send(msg);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
     }

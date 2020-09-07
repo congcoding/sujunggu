@@ -41,7 +41,6 @@ public class SchedulerController {
         logger.info("==================== Daily 이메일 발송 시작 ====================");
         MimeMessagePreparator[] preparatorArray = schedulerService.getPreparatorArrayByType('d');
         schedulerService.sendMail(preparatorArray);
-        logger.info("==================== Daily 이메일 발송 끝 ====================");
     }
 
 }
