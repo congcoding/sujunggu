@@ -106,20 +106,6 @@ public class UserService implements UserDetailsService {
         return tempPassword;
     }
 
-    @Transactional
-    public void updatePassword(String email, String oldPassword, String newPassword) {
-        User u = userRepository.findByEmail(email).orElse(null);
-
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        if (passwordEncoder.matches(oldPassword, u.getPassword())) {
-            u.updatePassword(passwordEncoder.encode(newPassword));
-        }
-        else {
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
-        }
-    }
-
-    @Async
     public void sendTempPassword(String email, String tempPassword) {
         // 임시 비밀번호 이메일로 전송
         try {
@@ -132,6 +118,19 @@ public class UserService implements UserDetailsService {
             mailSender.send(msg);
         } catch (MessagingException e) {
             e.printStackTrace();
+        }
+    }
+
+    @Transactional
+    public void updatePassword(String email, String oldPassword, String newPassword) {
+        User u = userRepository.findByEmail(email).orElse(null);
+
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        if (passwordEncoder.matches(oldPassword, u.getPassword())) {
+            u.updatePassword(passwordEncoder.encode(newPassword));
+        }
+        else {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
         }
     }
 

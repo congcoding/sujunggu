@@ -2,6 +2,8 @@ package com.sujunggu.service;
 
 import com.sujunggu.domain.board.Board;
 import com.sujunggu.domain.board.BoardRepository;
+import com.sujunggu.domain.department.Department;
+import com.sujunggu.domain.department.DepartmentRepository;
 import com.sujunggu.domain.post.Post;
 import com.sujunggu.domain.post.PostPK;
 import com.sujunggu.domain.post.PostRepository;
@@ -20,9 +22,14 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.mail.javamail.MimeMessagePreparator;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,11 +42,12 @@ import java.util.concurrent.TimeUnit;
 public class SchedulerService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final JavaMailSender mailSender;
 
     private final PostRepository postRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
-    private final AsyncService asyncService;
+    private final DepartmentRepository departmentRepository;
 
     @Value("${portal.id}")
     private String PORTAL_ID;
@@ -55,12 +63,10 @@ public class SchedulerService {
 
     private int postCreatedCount;
     private int postModifiedCount;
-    private int mailCount;
 
     public void crawling() throws IOException, InterruptedException {
         postCreatedCount = 0;
         postModifiedCount = 0;
-        mailCount = 0;
 
         // 학과별 게시판 크롤링
         logger.info("==================== 학과별 게시판 크롤링 시작 ====================");
@@ -182,11 +188,10 @@ public class SchedulerService {
                 postModifiedCount++;
             }
         }
-
         driver.quit();
     }
 
-    public void sendMailByType(char type) {
+    public MimeMessagePreparator[] getPreparatorArrayByType(char type) {
         List<User> userList = new ArrayList<>();
         List<Post> postList = new ArrayList<>();
 
@@ -199,6 +204,7 @@ public class SchedulerService {
             postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(1450));
         }
 
+        List<MimeMessagePreparator> preparatorList = new ArrayList<>();
         for (User u : userList) {
             List<String> subscriptionList = Arrays.asList(u.getSubscription().split(",")); // 구독중인 게시판 리스트
             List<Post> sendPostList = new ArrayList<>(); // 이메일로 보낼 포스트 리스트
@@ -209,11 +215,50 @@ public class SchedulerService {
                 }
             }
             if (!sendPostList.isEmpty()) { // sendPostList가 비어있지 않으면 이메일 발송
-                asyncService.sendMail(u, sendPostList);
-                mailCount++;
+                setPreparatorList(preparatorList, u, sendPostList);
             }
         }
-        logger.info("이메일 발송 결과 : " + mailCount + "건");
+        return preparatorList.toArray(new MimeMessagePreparator[preparatorList.size()]);
     }
 
+    public void setPreparatorList(List preparatorList, User u, List<Post> sendPostList) {
+        preparatorList.add(new MimeMessagePreparator() {
+            @Override
+            public void prepare(MimeMessage msg) throws Exception {
+                MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
+                messageHelper.setSubject("[수정구] 구독중인 게시판에 공지사항 " + sendPostList.size() + "건이 등록/수정되었습니다.");
+
+                String html = "구독중인 게시판에 올라온 새로운 글과 수정된 글은 아래와 같습니다<br />";
+                html += "(학과별 공지사항의 경우 클릭하면 해당 글로 이동하고, 포탈 공지사항은 포탈로 이동합니다.)<br /><br />";
+                for (Post p : sendPostList) {
+                    Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
+                    Department d = departmentRepository.findOneByAddress(b.getAddress());
+                    String title = "";
+                    if (p.getCreatedDate().getHour() != p.getModifiedDate().getHour()) { // 수정된 글 경우
+                        title = "[수정][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                    }
+                    else { // 새로운 글인 경우
+                        title = "[신규][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                    }
+
+                    if ("".equals(p.getAddress())) { // 포탈 게시글인 경우
+                        html += "<a href='https://portal.sungshin.ac.kr/portal'>" + title + "</a><br />";
+                    }
+                    else { // 학과별 게시글인 경우
+                        html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
+                    }
+                }
+                html += "<br />구독 게시판, 구독 주기 변경은 <a href='https://www.수정구.com'>www.수정구.com</a>에서 가능합니다.";
+
+                messageHelper.setText(html, true);
+                messageHelper.setTo(u.getEmail());
+            }
+        });
+    }
+
+    @Async
+    public void sendMail(MimeMessagePreparator[] preparatorArray) {
+        mailSender.send(preparatorArray);
+        logger.info("==================== 이메일 발송 끝 (" + preparatorArray.length + "건) ====================");
+    }
 }
