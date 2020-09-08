@@ -4,7 +4,6 @@ import com.sujunggu.service.SchedulerService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -30,8 +29,7 @@ public class SchedulerController {
 
         // 이메일 발송
         logger.info("==================== Hourly 이메일 발송 시작 ====================");
-        MimeMessagePreparator[] preparatorArray = schedulerService.getPreparatorArrayByType('h');
-        schedulerService.sendMail(preparatorArray);
+        schedulerService.sendHourlyEmail();
     }
 
     @Scheduled(cron = "0 30 18 * * *")
@@ -39,8 +37,7 @@ public class SchedulerController {
 
         // 이메일 발송
         logger.info("==================== Daily 이메일 발송 시작 ====================");
-        MimeMessagePreparator[] preparatorArray = schedulerService.getPreparatorArrayByType('d');
-        schedulerService.sendMail(preparatorArray);
+        schedulerService.sendDailyEmail();
     }
 
 }

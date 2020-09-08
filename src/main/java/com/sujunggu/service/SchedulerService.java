@@ -24,18 +24,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -62,18 +64,26 @@ public class SchedulerService {
     @Value("${selenium.driver.path}")
     private String DRIVER_PATH;
 
+    @Value("${hourly.mail.username}")
+    private String USERNAME;
+
+    @Value("${hourly.mail.password}")
+    private String PASSWORD;
+
     private int postCreatedCount;
     private int postModifiedCount;
+    private int emailCount;
 
     public void crawling() throws IOException, InterruptedException {
         postCreatedCount = 0;
         postModifiedCount = 0;
+        emailCount = 0;
 
         // 학과별 게시판 크롤링
         logger.info("==================== 학과별 게시판 크롤링 시작 ====================");
         List<Board> boardList = boardRepository.findAll();
         for (Board b : boardList) {
-            String url = "https://www.sungshin.ac.kr/" + b.getAddress()+ "/" + b.getBoardNo() + "/subview.do";
+            String url = "https://www.sungshin.ac.kr/" + b.getAddress() + "/" + b.getBoardNo() + "/subview.do";
             crawlingByBoardNo(url, b.getBoardNo());
         }
         logger.info("학과별 게시판 크롤링 결과 : 신규(" + postCreatedCount + "건), 수정(" + postModifiedCount + "건)");
@@ -117,8 +127,7 @@ public class SchedulerService {
                 postRepository.save(postCrawlingDto.toEntity()); // 새로운 글이면 save
                 logger.info("[신규 크롤링] " + postCrawlingDto.toEntity().toString());
                 postCreatedCount++;
-            }
-            else if (!((p.getTitle()).equals(postCrawlingDto.getTitle())) || !((p.getAddress()).equals(postCrawlingDto.getAddress()))) {
+            } else if (!((p.getTitle()).equals(postCrawlingDto.getTitle())) || !((p.getAddress()).equals(postCrawlingDto.getAddress()))) {
                 logger.info("[수정 크롤링 : 전] " + p.toString());
                 p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
                 p.updateAddress(postCrawlingDto.getAddress()); // 주소가 변경됐을 경우 update
@@ -180,8 +189,7 @@ public class SchedulerService {
                 postRepository.save(postCrawlingDto.toEntity()); // 새로운 글이면 save
                 logger.info("[신규 크롤링] " + postCrawlingDto.toEntity().toString());
                 postCreatedCount++;
-            }
-            else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
+            } else if (!((p.getTitle()).equals(postCrawlingDto.getTitle()))) {
                 logger.info("[수정 크롤링 : 전] " + p.toString());
                 p.updateTitle(postCrawlingDto.getTitle()); // 제목이 변경됐을 경우 update
                 logger.info("[수정 크롤링 : 후] " + postCrawlingDto.toEntity().toString());
@@ -192,20 +200,27 @@ public class SchedulerService {
         driver.quit();
     }
 
-    public MimeMessagePreparator[] getPreparatorArrayByType(char type) {
-        List<User> userList = new ArrayList<>();
-        List<Post> postList = new ArrayList<>();
+    @Async
+    public void sendHourlyEmail() {
+        List<User> userList = userRepository.findUserHourly();
+        List<Post> postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(10));
 
-        if (type == 'h') { // 구독주기가 1시간인 경우
-            userList = userRepository.findUserHourly();
-            postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(10));
-        }
-        else if (type == 'd') { // 구독주기가 1일인 경우
-            userList = userRepository.findUserDaily();
-            postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(1450));
-        }
+        Properties props = new Properties();
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.socketFactory.port", "smtp.gmail.com");
+        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        MimeMessage msg = new MimeMessage(Session.getInstance(props, new Authenticator()
+        {
+            public PasswordAuthentication getPasswordAuthentication()
+            {
+                return new PasswordAuthentication(USERNAME, PASSWORD);
+            }
+        }));
 
-        List<MimeMessagePreparator> preparatorList = new ArrayList<>();
         for (User u : userList) {
             List<String> subscriptionList = Arrays.asList(u.getSubscription().split(",")); // 구독중인 게시판 리스트
             List<Post> sendPostList = new ArrayList<>(); // 이메일로 보낼 포스트 리스트
@@ -215,52 +230,104 @@ public class SchedulerService {
                     sendPostList.add(p); // 구독중인 게시판의 Post면 sendPostList에 추가
                 }
             }
+
             if (!sendPostList.isEmpty()) { // sendPostList가 비어있지 않으면 이메일 발송
-                setPreparatorList(preparatorList, u, sendPostList);
+                try {
+                    MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
+
+                    messageHelper.setSubject("[수정구] 구독중인 게시판에 공지사항 " + sendPostList.size() + "건이 등록/수정되었습니다.");
+
+                    String html = "구독중인 게시판에 올라온 새로운 글과 수정된 글은 아래와 같습니다<br />";
+                    html += "(학과별 공지사항의 경우 클릭하면 해당 글로 이동하고, 포탈 공지사항은 포탈로 이동합니다.)<br /><br />";
+                    for (Post p : sendPostList) {
+                        Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
+                        Department d = departmentRepository.findOneByAddress(b.getAddress());
+                        String title = "";
+                        if (p.getCreatedDate().getHour() != p.getModifiedDate().getHour()) { // 수정된 글 경우
+                            title = "[수정][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                        } else { // 새로운 글인 경우
+                            title = "[신규][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                        }
+
+                        if ("".equals(p.getAddress())) { // 포탈 게시글인 경우
+                            html += "<a href='https://portal.sungshin.ac.kr/portal'>" + title + "</a><br />";
+                        } else { // 학과별 게시글인 경우
+                            html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
+                        }
+                    }
+                    html += "<br />구독 게시판, 구독 주기 변경은 <a href='https://www.수정구.com'>www.수정구.com</a>에서 가능합니다.";
+
+                    messageHelper.setText(html, true);
+                    messageHelper.setTo(u.getEmail());
+                    messageHelper.setFrom(new InternetAddress("subsforsujung@gmail.com", "subsforsujung"));
+                    logger.info(u.getEmail() + " 이메일 발송 시작");
+                    Transport.send(msg);
+                    emailCount++;
+                    logger.info(u.getEmail() + " 이메일 발송 끝");
+                } catch (MessagingException | UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    logger.info(u.getEmail() + " 이메일 발송 에러");
+                }
             }
         }
-        return preparatorList.toArray(new MimeMessagePreparator[preparatorList.size()]);
-    }
-
-    public void setPreparatorList(List preparatorList, User u, List<Post> sendPostList) {
-        preparatorList.add(new MimeMessagePreparator() {
-            @Override
-            public void prepare(MimeMessage msg) throws Exception {
-                MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
-                messageHelper.setSubject("[수정구] 구독중인 게시판에 공지사항 " + sendPostList.size() + "건이 등록/수정되었습니다.");
-
-                String html = "구독중인 게시판에 올라온 새로운 글과 수정된 글은 아래와 같습니다<br />";
-                html += "(학과별 공지사항의 경우 클릭하면 해당 글로 이동하고, 포탈 공지사항은 포탈로 이동합니다.)<br /><br />";
-                for (Post p : sendPostList) {
-                    Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
-                    Department d = departmentRepository.findOneByAddress(b.getAddress());
-                    String title = "";
-                    if (p.getCreatedDate().getHour() != p.getModifiedDate().getHour()) { // 수정된 글 경우
-                        title = "[수정][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
-                    }
-                    else { // 새로운 글인 경우
-                        title = "[신규][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
-                    }
-
-                    if ("".equals(p.getAddress())) { // 포탈 게시글인 경우
-                        html += "<a href='https://portal.sungshin.ac.kr/portal'>" + title + "</a><br />";
-                    }
-                    else { // 학과별 게시글인 경우
-                        html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
-                    }
-                }
-                html += "<br />구독 게시판, 구독 주기 변경은 <a href='https://www.수정구.com'>www.수정구.com</a>에서 가능합니다.";
-
-                messageHelper.setText(html, true);
-                messageHelper.setTo(u.getEmail());
-                messageHelper.setFrom(new InternetAddress("subsforsujung@gmail.com", "subsforsujung"));
-            }
-        });
+        logger.info("==================== Hourly 이메일 발송 끝 (" + emailCount + "건) ====================");
     }
 
     @Async
-    public void sendMail(MimeMessagePreparator[] preparatorArray) {
-        mailSender.send(preparatorArray);
-        logger.info("==================== 이메일 발송 끝 (" + preparatorArray.length + "건) ====================");
+    public void sendDailyEmail() {
+        List<User> userList = userRepository.findUserDaily();
+        List<Post> postList = postRepository.findByModifiedDateGreaterThan(LocalDateTime.now().minusMinutes(1450));
+
+        for (User u : userList) {
+            List<String> subscriptionList = Arrays.asList(u.getSubscription().split(",")); // 구독중인 게시판 리스트
+            List<Post> sendPostList = new ArrayList<>(); // 이메일로 보낼 포스트 리스트
+            for (Post p : postList) {
+                int boardNo = p.getPostPK().getBoardNo();
+                if (subscriptionList.contains(Integer.toString(boardNo))) {
+                    sendPostList.add(p); // 구독중인 게시판의 Post면 sendPostList에 추가
+                }
+            }
+
+            if (!sendPostList.isEmpty()) { // sendPostList가 비어있지 않으면 이메일 발송
+                try {
+                    MimeMessage msg = mailSender.createMimeMessage();
+                    MimeMessageHelper messageHelper = new MimeMessageHelper(msg, true, "UTF-8");
+
+                    messageHelper.setSubject("[수정구] 구독중인 게시판에 공지사항 " + sendPostList.size() + "건이 등록/수정되었습니다.");
+
+                    String html = "구독중인 게시판에 올라온 새로운 글과 수정된 글은 아래와 같습니다<br />";
+                    html += "(학과별 공지사항의 경우 클릭하면 해당 글로 이동하고, 포탈 공지사항은 포탈로 이동합니다.)<br /><br />";
+                    for (Post p : sendPostList) {
+                        Board b = boardRepository.findOneByBoardNo(p.getPostPK().getBoardNo());
+                        Department d = departmentRepository.findOneByAddress(b.getAddress());
+                        String title = "";
+                        if (p.getCreatedDate().getHour() != p.getModifiedDate().getHour()) { // 수정된 글 경우
+                            title = "[수정][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                        } else { // 새로운 글인 경우
+                            title = "[신규][" + d.getMajor() + "-" + b.getName() + "] " + p.getTitle();
+                        }
+
+                        if ("".equals(p.getAddress())) { // 포탈 게시글인 경우
+                            html += "<a href='https://portal.sungshin.ac.kr/portal'>" + title + "</a><br />";
+                        } else { // 학과별 게시글인 경우
+                            html += "<a href='https://www.sungshin.ac.kr" + p.getAddress() + "'>" + title + "</a><br />";
+                        }
+                    }
+                    html += "<br />구독 게시판, 구독 주기 변경은 <a href='https://www.수정구.com'>www.수정구.com</a>에서 가능합니다.";
+
+                    messageHelper.setText(html, true);
+                    messageHelper.setTo(u.getEmail());
+                    logger.info(u.getEmail() + " 이메일 발송 시작");
+                    mailSender.send(msg);
+                    emailCount++;
+                    logger.info(u.getEmail() + " 이메일 발송 끝");
+                } catch (MessagingException e) {
+                    e.printStackTrace();
+                    logger.info(u.getEmail() + " 이메일 발송 에러");
+                }
+            }
+        }
+        logger.info("==================== Daily 이메일 발송 끝 (" + emailCount + "건) ====================");
     }
+
 }
