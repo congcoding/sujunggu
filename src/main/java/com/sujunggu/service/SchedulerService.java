@@ -146,12 +146,12 @@ public class SchedulerService {
         // 크롬옵션 설정
         ChromeOptions options = new ChromeOptions();
         options.setCapability("ignoreProtectedModeSettings", true);
-        options.addArguments("headless"); //창 안 보이게 하는 옵션
-        options.addArguments("--disable-dev-shm-usage"); // linux 성능 개선 옵션
         options.addArguments("--no-sandbox"); // linux 성능 개선 옵션
+        options.addArguments("--disable-dev-shm-usage"); // linux 성능 개선 옵션
+        options.addArguments("--headless"); //창 안 보이게 하는 옵션
         options.addArguments("lang=ko"); // 한글 옵션
         WebDriver driver = new ChromeDriver(options);
-        driver.manage().timeouts().implicitlyWait(180, TimeUnit.SECONDS); // 페이지 로딩 시간 3분까지 기다리게 하기
+        driver.manage().timeouts().implicitlyWait(300, TimeUnit.SECONDS); // 페이지 로딩 시간 5분까지 기다리게 하기
 
         // 포탈 로그인
         driver.get("https://portal.sungshin.ac.kr/sso/login.jsp");
@@ -161,13 +161,13 @@ public class SchedulerService {
         inputId.sendKeys(PORTAL_ID);
         inputPwd.sendKeys(PORTAL_PWD);
         btnLogin.click();
-        Thread.sleep(3000);
+        Thread.sleep(5000);
 
         // 학부학사 iframe으로 이동
         driver.get(url);
-        Thread.sleep(3000);
+        Thread.sleep(5000);
         driver.switchTo().frame(driver.findElement(By.id("IframePortlet_" + Integer.toString(boardNo))));
-        Thread.sleep(3000);
+        Thread.sleep(5000);
 
         // 게시글 크롤링
         List<WebElement> aList = driver.findElements(By.cssSelector("table[class='list web'] > tbody > tr > td[class='L inLi'] > div > a"));
